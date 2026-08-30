@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hypershell-firefly-iii-mcp"
+version = "0.1.0"
+description = "Strictly read-only semantic MCP adapter for Firefly III"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+license = "MIT"
+authors = [{ name = "Hypershell" }]
+dependencies = [
+  "fastmcp==3.4.7",
+  "httpx==0.28.1",
+]
+
+[project.scripts]
+firefly-iii-mcp = "firefly_iii_mcp.__main__:main"
+
+[dependency-groups]
+dev = [
+  "pytest==8.4.2",
+  "pytest-asyncio==1.1.0",
+  "pytest-cov==6.2.1",
+  "ruff==0.12.11",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q --strict-markers --strict-config"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/firefly_iii_mcp"]
