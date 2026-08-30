@@ -72,8 +72,18 @@ def api_handler(sample_transaction: dict[str, Any]) -> Callable[[httpx.Request],
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
         if path.endswith("/about"):
-            return detail_response(
-                item("0", version="6.6.6", api_version="2.1.0", php_version="8.4", os="Linux", driver="mysql")
+            # Observed Firefly III 6.6.6 contract: /about is wrapped in "data"
+            # but is not a JSON:API resource with an "attributes" object.
+            return json_response(
+                {
+                    "data": {
+                        "version": "6.6.6",
+                        "api_version": "6.6.6",
+                        "php_version": "8.5.7",
+                        "os": "Linux",
+                        "driver": "mysql",
+                    }
+                }
             )
         if path.endswith("/accounts/1"):
             return detail_response(

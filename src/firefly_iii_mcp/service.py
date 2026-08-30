@@ -151,13 +151,16 @@ class FireflyService:
     async def get_about(self) -> dict[str, Any]:
         payload = await self.client.get(Endpoint.ABOUT)
         data = _unwrap_one(payload)
-        attrs = _attrs(data)
+        # Firefly III 6.6.6 returns /about as {"data": {<fields>}} rather than
+        # a JSON:API resource with an "attributes" object. Retain compatibility
+        # with a JSON:API-shaped response while preferring the observed contract.
+        source = _attrs(data) or data
         return {
-            "version": attrs.get("version"),
-            "api_version": attrs.get("api_version"),
-            "php_version": attrs.get("php_version"),
-            "os": attrs.get("os"),
-            "driver": attrs.get("driver"),
+            "version": source.get("version"),
+            "api_version": source.get("api_version"),
+            "php_version": source.get("php_version"),
+            "os": source.get("os"),
+            "driver": source.get("driver"),
         }
 
     async def list_accounts(

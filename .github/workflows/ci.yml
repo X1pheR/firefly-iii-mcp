@@ -5,21 +5,21 @@ on:
     branches: [main]
   pull_request:
 
-permissions:
-  contents: read
+permissions: read-all
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          version: "0.12.3"
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.4"
+          python-version: "3.12"
           enable-cache: true
-      - name: Set up Python
-        run: uv python install 3.13
       - name: Verify accepted source contract
         run: ./scripts/verify.sh

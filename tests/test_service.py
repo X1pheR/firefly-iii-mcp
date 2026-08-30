@@ -10,6 +10,18 @@ from firefly_iii_mcp.service import FireflyService, InputError
 
 
 @pytest.mark.asyncio
+async def test_about_matches_observed_firefly_6_6_6_shape(service: FireflyService) -> None:
+    result = await service.get_about()
+    assert result == {
+        "version": "6.6.6",
+        "api_version": "6.6.6",
+        "php_version": "8.5.7",
+        "os": "Linux",
+        "driver": "mysql",
+    }
+
+
+@pytest.mark.asyncio
 async def test_transaction_list_is_bounded_and_minimized(
     service: FireflyService, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -33,7 +33,7 @@ READ_ONLY_ANNOTATIONS = {
     "readOnlyHint": True,
     "destructiveHint": False,
     "idempotentHint": True,
-    "openWorldHint": False,
+    "openWorldHint": True,
 }
 
 

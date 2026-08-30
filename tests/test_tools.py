@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 from fastmcp import Client
@@ -32,6 +33,8 @@ EXPECTED_TOOLS = {
     "firefly_get_spending_by_category",
     "firefly_get_monthly_summary",
 }
+ROOT = Path(__file__).parents[1]
+
 WRITE_TOKENS = {
     "create",
     "update",
@@ -46,6 +49,13 @@ WRITE_TOKENS = {
     "purge",
     "destroy",
 }
+
+
+def test_tool_reference_covers_exact_published_inventory() -> None:
+    reference = (ROOT / "docs/tools.md").read_text(encoding="utf-8")
+    documented = {name for name in TOOL_NAMES if f"`{name}`" in reference}
+    assert documented == set(TOOL_NAMES)
+    assert "exactly 22 explicit read-only tools" in reference
 
 
 @pytest.mark.asyncio
@@ -111,3 +121,5 @@ async def test_tools_have_read_only_annotations(service: FireflyService) -> None
         annotations = json.loads(tool.annotations.model_dump_json()) if tool.annotations else {}
         assert annotations.get("readOnlyHint") is True
         assert annotations.get("destructiveHint") is False
+        assert annotations.get("idempotentHint") is True
+        assert annotations.get("openWorldHint") is True
