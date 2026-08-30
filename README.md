@@ -4,6 +4,24 @@
 
 The server intentionally exposes a small semantic financial-analysis surface instead of generating or proxying the complete Firefly III API. This keeps mutations, automation and arbitrary HTTP access absent from the MCP contract.
 
+## Why another Firefly III MCP?
+
+Before building this server, Hypershell reviewed existing community Firefly III MCP implementations, including [`daften/fireflyiii-mcp`](https://github.com/daften/fireflyiii-mcp), [`vedantjain8/firefly-iii-mcp`](https://github.com/vedantjain8/firefly-iii-mcp) and [`fabianonetto/mcp-server-firefly-iii`](https://github.com/fabianonetto/mcp-server-firefly-iii). Those projects are useful, but they optimize for a different goal: broad or near-complete Firefly III functionality, with substantially larger tool surfaces and, depending on the project, CRUD/write operations, exports, automation or remote-access features.
+
+Hypershell needed the opposite security posture because Firefly III Personal Access Tokens do not provide a useful read-only scope boundary. The MCP itself therefore has to be the enforcement boundary. The design requirements were:
+
+- no write mode or runtime switch that can enable mutations;
+- no generic API proxy or arbitrary endpoint access;
+- a fixed GET-only endpoint allowlist;
+- a deliberately small semantic tool surface instead of API-shaped tool generation;
+- bounded list sizes and date ranges to constrain financial-data exposure;
+- no rule execution, exports, attachments, imports, webhooks or administration;
+- deployment only through the sensitive `agent-admin` capability boundary.
+
+Using a full-coverage server and merely disabling its write groups would still leave a much larger implementation and endpoint surface, including mutation paths that Hypershell does not need. This repository is therefore intentionally a narrower adapter with a smaller trusted computing base, rather than an attempt to provide the most complete Firefly III MCP available.
+
+This is a difference in threat model and product scope, not a claim that the other community projects are defective or unsuitable for their intended use cases.
+
 ## Status and compatibility
 
 - Release line: `0.1.x`.
