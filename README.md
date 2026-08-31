@@ -6,21 +6,25 @@ The server intentionally exposes a small semantic financial-analysis surface ins
 
 ## Why another Firefly III MCP?
 
-Before building this server, Hypershell reviewed existing community Firefly III MCP implementations, including [`daften/fireflyiii-mcp`](https://github.com/daften/fireflyiii-mcp), [`vedantjain8/firefly-iii-mcp`](https://github.com/vedantjain8/firefly-iii-mcp) and [`fabianonetto/mcp-server-firefly-iii`](https://github.com/fabianonetto/mcp-server-firefly-iii). Those projects are useful, but they optimize for a different goal: broad or near-complete Firefly III functionality, with substantially larger tool surfaces and, depending on the project, CRUD/write operations, exports, automation or remote-access features.
+Reuse was the first choice. Hypershell reviewed multiple existing Firefly III MCP servers before building this adapter, and some candidates already offered tool filtering or a read-only mode. The decision to build was therefore **not simply that existing servers could write**.
 
-Hypershell needed the opposite security posture because Firefly III Personal Access Tokens do not provide a useful read-only scope boundary. The MCP itself therefore has to be the enforcement boundary. The design requirements were:
+The mismatch was broader: most existing projects are general-purpose Firefly III integrations that expose a large, API-shaped capability surface, while Hypershell needed a small agent-facing financial-analysis interface. The required combination was:
 
-- no write mode or runtime switch that can enable mutations;
-- no generic API proxy or arbitrary endpoint access;
-- a fixed GET-only endpoint allowlist;
-- a deliberately small semantic tool surface instead of API-shaped tool generation;
-- bounded list sizes and date ranges to constrain financial-data exposure;
-- no rule execution, exports, attachments, imports, webhooks or administration;
-- deployment only through the sensitive `agent-admin` capability boundary.
+- **semantic tools** for common financial questions instead of one MCP tool per API operation;
+- **small tool context** so ChatGPT and Hermes do not carry a large Firefly schema catalog when only a focused read surface is needed;
+- **data minimization** through bounded pagination/date ranges and deliberately reduced response objects;
+- **hard read-only enforcement** at HTTP method and endpoint level, because the Firefly PAT itself has broad user authority;
+- **no generic API escape hatch**, hidden mutation path, export/import surface or action-style rule execution;
+- **a small trusted computing base** that is practical to audit, test and keep compatible with the Firefly version actually deployed;
+- a simple **stdio deployment fit** for the existing MCPJungle runtime without adding another remote service layer.
 
-Using a full-coverage server and merely disabling its write groups would still leave a much larger implementation and endpoint surface, including mutation paths that Hypershell does not need. This repository is therefore intentionally a narrower adapter with a smaller trusted computing base, rather than an attempt to provide the most complete Firefly III MCP available.
+[`daften/fireflyiii-mcp`](https://github.com/daften/fireflyiii-mcp) was the strongest reuse candidate and already had a read-only mode. At the reviewed revision, however, that mode filtered the published tool set by tool naming while the underlying implementation still contained a much broader generated API surface and mutation-capable client. Making it match the requirements above would have meant removing most of the tool catalog, replacing the safety model, adding response minimization and bounds, and then building the semantic analysis tools anyway. Carrying that delta as a fork would have been more code and more upstream-merge risk than maintaining this deliberately small adapter.
 
-This is a difference in threat model and product scope, not a claim that the other community projects are defective or unsuitable for their intended use cases.
+Other reviewed servers had similar product-fit gaps: broad CRUD/full-API coverage, capability groups that mixed reads and writes, generic execute/operation meta-tools, or filtering mechanisms that were not the hard method-and-endpoint boundary required here. Those can be valid designs for users who want broad Firefly control; they target a different use case.
+
+The detailed review, including the read-only-mode analysis, reviewed upstream revisions and the reasons each primary candidate was not selected, is in [`docs/alternatives.md`](docs/alternatives.md).
+
+This is a build-vs-reuse decision based on the combined agent UX, data-exposure, security and maintenance model—not a claim that community Firefly III MCP projects are defective.
 
 ## Status and compatibility
 
@@ -79,7 +83,7 @@ The implementation adds the following controls:
 10. The PAT is loaded only from `FIREFLY_TOKEN_FILE`; it is never an MCP argument.
 11. All MCP tools advertise `readOnlyHint=true`, `destructiveHint=false` and `idempotentHint=true`.
 
-The production Hypershell deployment additionally keeps Firefly tooling out of the routine `agent-fast` capability group and exposes it only through the explicitly sensitive `agent-admin` boundary.
+The production Hypershell deployment keeps Firefly tooling out of the routine `agent-fast` group to avoid adding financial tool schemas to the default tool context. It is exposed through `agent-admin` when needed. That group placement is a context/catalog optimization, not an authorization boundary; the Firefly MCP itself enforces the read-only capability boundary.
 
 See [`SECURITY.md`](SECURITY.md) for vulnerability reporting and credential-handling guidance.
 

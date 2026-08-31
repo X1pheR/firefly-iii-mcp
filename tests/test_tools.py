@@ -58,6 +58,20 @@ def test_tool_reference_covers_exact_published_inventory() -> None:
     assert "exactly 22 explicit read-only tools" in reference
 
 
+def test_build_vs_reuse_decision_is_documented() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    alternatives = (ROOT / "docs/alternatives.md").read_text(encoding="utf-8")
+    alternatives_lower = alternatives.lower()
+
+    assert "docs/alternatives.md" in readme
+    assert "not simply that existing servers could write" in readme
+    assert "daften/fireflyiii-mcp" in alternatives
+    assert "read-only mode was not enough" in alternatives_lower
+    assert "semantic agent tools" in alternatives_lower
+    assert "data minimization" in alternatives_lower
+    assert "when reuse should be reconsidered" in alternatives_lower
+
+
 @pytest.mark.asyncio
 async def test_exact_effective_tool_inventory(service: FireflyService) -> None:
     mcp = create_mcp(service)
