@@ -17,10 +17,13 @@ class Settings:
 
     @classmethod
     def from_environment(cls) -> Settings:
-        base_url = os.environ.get("FIREFLY_BASE_URL", "http://firefly_core:8080/api/v1").rstrip("/")
+        base_url_raw = os.environ.get("FIREFLY_BASE_URL", "")
         token_file_raw = os.environ.get("FIREFLY_TOKEN_FILE", "")
+        if not base_url_raw:
+            raise ConfigurationError("FIREFLY_BASE_URL is required")
         if not token_file_raw:
             raise ConfigurationError("FIREFLY_TOKEN_FILE is required")
+        base_url = base_url_raw.rstrip("/")
         if not base_url.endswith("/api/v1"):
             raise ConfigurationError("FIREFLY_BASE_URL must end with /api/v1")
         return cls(base_url=base_url, token_file=Path(token_file_raw))

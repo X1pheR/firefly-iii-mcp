@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -70,6 +71,41 @@ def test_build_vs_reuse_decision_is_documented() -> None:
     assert "semantic agent tools" in alternatives_lower
     assert "data minimization" in alternatives_lower
     assert "when reuse should be reconsidered" in alternatives_lower
+
+
+def test_public_repository_contract_is_self_contained_and_pinned() -> None:
+    required_files = {
+        "CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "SECURITY.md",
+        "docs/SECURE-DEVELOPMENT.md",
+        ".github/workflows/ci.yml",
+        ".github/workflows/release.yml",
+        ".github/workflows/scorecards.yml",
+    }
+    for relative_path in required_files:
+        assert (ROOT / relative_path).is_file(), relative_path
+
+    public_text = "\n".join(
+        (ROOT / relative_path).read_text(encoding="utf-8")
+        for relative_path in [
+            "README.md",
+            "SECURITY.md",
+            "CONTRIBUTING.md",
+            "docs/SECURE-DEVELOPMENT.md",
+            "src/firefly_iii_mcp/config.py",
+        ]
+    )
+    assert "docker.lan.hypershell" not in public_text
+    assert "firefly_core:8080" not in public_text
+    assert "This repository is currently private" not in public_text
+
+    uses_pattern = re.compile(r"^\s*uses:\s*[^@\s]+@([0-9a-f]{40})(?:\s+#.*)?$", re.MULTILINE)
+    for workflow in (ROOT / ".github/workflows").glob("*.yml"):
+        text = workflow.read_text(encoding="utf-8")
+        uses_lines = [line for line in text.splitlines() if line.lstrip().startswith("uses:")]
+        assert uses_lines, workflow.name
+        assert len(uses_pattern.findall(text)) == len(uses_lines), workflow.name
 
 
 @pytest.mark.asyncio

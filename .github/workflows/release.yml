@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to publish"
+        required: true
+        type: string
+      expected_sha:
+        description: "Exact 40-character release source commit SHA"
+        required: true
+        type: string
+
+permissions: read-all
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.expected_sha || github.sha }}
+    steps:
+      - name: Check out exact release source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.4"
+          python-version: "3.12"
+
+      - name: Require public repository and exact release source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ github.event.repository.private }}" = "false"
+          [[ "${EXPECTED_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${RELEASE_TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          test "${RELEASE_TAG}" = "v${version}"
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "${EXPECTED_SHA}"
+          test "$(git rev-list -n1 "${RELEASE_TAG}")" = "${EXPECTED_SHA}"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            test "${EXPECTED_SHA}" = "$(git rev-parse origin/main)"
+          else
+            git merge-base --is-ancestor "${EXPECTED_SHA}" origin/main
+          fi
+
+      - name: Verify exact tag
+        run: ./scripts/verify.sh
+
+      - name: Build reproducible release artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SOURCE_DATE_EPOCH="$(git show -s --format=%ct HEAD)"
+          release_work_dir="$(mktemp -d)"
+          trap 'rm -rf "$release_work_dir"' EXIT
+          uv build --out-dir "$release_work_dir/dist-a"
+          uv build --out-dir "$release_work_dir/dist-b"
+          for artifact in "$release_work_dir/dist-a/"*; do
+            cmp "$artifact" "$release_work_dir/dist-b/$(basename "$artifact")"
+          done
+          rm -rf dist
+          mkdir dist
+          cp "$release_work_dir/dist-a/"* dist/
+          sha256sum dist/*.whl dist/*.tar.gz | sed 's#  dist/#  #' > SHA256SUMS
+
+      - name: Attest release artifacts
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: "dist/*"
+
+      - name: Prepare provenance bundle
+        env:
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "${ATTESTATION_BUNDLE}"
+          cp "${ATTESTATION_BUNDLE}" "firefly-iii-mcp-${RELEASE_TAG}.sigstore.json"
+
+      - name: Create draft GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${RELEASE_TAG}" --draft --verify-tag --title "Firefly III MCP ${RELEASE_TAG}" --generate-notes
+
+      - name: Attach release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${RELEASE_TAG}" dist/*.whl dist/*.tar.gz SHA256SUMS "firefly-iii-mcp-${RELEASE_TAG}.sigstore.json"
+
+      - name: Publish immutable GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${RELEASE_TAG}" --draft=false

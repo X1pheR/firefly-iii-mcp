@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hypershell-firefly-iii-mcp"
-version = "0.1.1"
-description = "Strictly read-only semantic MCP adapter for Firefly III"
+version = "0.2.0"
+description = "Bounded semantic MCP server for safe, read-only Firefly III financial analysis"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
 license = "MIT"
@@ -16,6 +16,8 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Office/Business :: Financial",
 ]
 dependencies = [

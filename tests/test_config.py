@@ -7,10 +7,26 @@ import pytest
 from firefly_iii_mcp.config import ConfigurationError, Settings, read_token_file
 
 
+def test_settings_requires_base_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("FIREFLY_BASE_URL", raising=False)
+    monkeypatch.setenv("FIREFLY_TOKEN_FILE", "/run/secrets/firefly-token")
+    with pytest.raises(ConfigurationError, match="FIREFLY_BASE_URL"):
+        Settings.from_environment()
+
+
 def test_settings_requires_token_file(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FIREFLY_BASE_URL", "https://firefly.example.com/api/v1")
     monkeypatch.delenv("FIREFLY_TOKEN_FILE", raising=False)
     with pytest.raises(ConfigurationError, match="FIREFLY_TOKEN_FILE"):
         Settings.from_environment()
+
+
+def test_settings_accepts_explicit_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FIREFLY_BASE_URL", "https://firefly.example.com/api/v1/")
+    monkeypatch.setenv("FIREFLY_TOKEN_FILE", "/run/secrets/firefly-token")
+    settings = Settings.from_environment()
+    assert settings.base_url == "https://firefly.example.com/api/v1"
+    assert settings.token_file == Path("/run/secrets/firefly-token")
 
 
 def test_settings_rejects_non_api_v1_base(monkeypatch: pytest.MonkeyPatch) -> None:

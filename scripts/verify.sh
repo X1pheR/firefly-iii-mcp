@@ -6,7 +6,8 @@ command -v uv >/dev/null 2>&1 || {
   exit 1
 }
 
-uv venv --clear --python 3.12
+VERIFY_PYTHON="${VERIFY_PYTHON:-3.12}"
+uv venv --clear --python "$VERIFY_PYTHON"
 uv sync --frozen --all-groups
 .venv/bin/python - <<'PY'
 import importlib.metadata
@@ -20,5 +21,6 @@ PY
 .venv/bin/ruff check .
 .venv/bin/pytest --cov=firefly_iii_mcp --cov-report=term-missing --cov-fail-under=90
 rm -rf dist
-uv build --wheel --out-dir dist
+uv build --out-dir dist
 test -n "$(find dist -maxdepth 1 -type f -name '*.whl' -print -quit)"
+test -n "$(find dist -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"

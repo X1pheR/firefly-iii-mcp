@@ -1,0 +1,43 @@
+name: Bug report
+description: Report reproducible Firefly III MCP behavior that does not match the documented contract.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include Firefly Personal Access Tokens, real financial exports, account numbers or other private financial data. Security vulnerabilities must be reported privately according to SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: Firefly III MCP version
+      description: Release tag or exact commit SHA.
+      placeholder: v0.2.0
+    validations:
+      required: true
+  - type: input
+    id: firefly-version
+    attributes:
+      label: Firefly III version
+      placeholder: 6.6.6
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Minimal steps using synthetic/redacted data only.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Relevant MCP client, operating system, Python version or sanitized error text.
