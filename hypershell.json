@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "name": "Firefly III MCP",
+  "category": "Applications",
+  "kind": "mcp-server"
+}
